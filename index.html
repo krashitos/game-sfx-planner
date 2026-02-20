@@ -1,0 +1,732 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Game SFX Planner — AI Sound Design Brief Generator</title>
+    <meta name="description" content="Describe any game action and get a detailed AI-generated sound design brief. Free, no API keys needed.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        /* ===== CSS Reset & Variables ===== */
+        *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+        :root {
+            --bg-primary: #0a0a0f;
+            --bg-secondary: #12121a;
+            --bg-card: rgba(18, 18, 30, 0.7);
+            --border-glow: rgba(0, 255, 200, 0.15);
+            --cyan: #00ffc8;
+            --cyan-dim: #00ffc840;
+            --magenta: #ff00aa;
+            --magenta-dim: #ff00aa30;
+            --purple: #8b5cf6;
+            --text-primary: #e8e8f0;
+            --text-secondary: #8888a0;
+            --text-muted: #555570;
+            --gradient-primary: linear-gradient(135deg, #00ffc8, #8b5cf6, #ff00aa);
+            --gradient-card: linear-gradient(135deg, rgba(0,255,200,0.05), rgba(139,92,246,0.05));
+            --shadow-glow: 0 0 40px rgba(0, 255, 200, 0.08);
+            --radius: 16px;
+            --radius-sm: 10px;
+            --transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            overflow-x: hidden;
+            line-height: 1.6;
+        }
+
+        /* ===== Animated Background ===== */
+        .bg-grid {
+            position: fixed;
+            inset: 0;
+            background-image:
+                linear-gradient(rgba(0,255,200,0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0,255,200,0.03) 1px, transparent 1px);
+            background-size: 60px 60px;
+            z-index: 0;
+            animation: gridPulse 8s ease-in-out infinite;
+        }
+
+        @keyframes gridPulse {
+            0%, 100% { opacity: 0.4; }
+            50% { opacity: 0.8; }
+        }
+
+        .bg-orb {
+            position: fixed;
+            border-radius: 50%;
+            filter: blur(100px);
+            z-index: 0;
+            animation: orbFloat 12s ease-in-out infinite;
+        }
+
+        .bg-orb-1 {
+            width: 500px; height: 500px;
+            background: var(--cyan-dim);
+            top: -200px; right: -100px;
+        }
+
+        .bg-orb-2 {
+            width: 400px; height: 400px;
+            background: var(--magenta-dim);
+            bottom: -150px; left: -100px;
+            animation-delay: -4s;
+        }
+
+        @keyframes orbFloat {
+            0%, 100% { transform: translate(0, 0) scale(1); }
+            33% { transform: translate(30px, -20px) scale(1.05); }
+            66% { transform: translate(-20px, 15px) scale(0.95); }
+        }
+
+        /* ===== Layout ===== */
+        .container {
+            position: relative;
+            z-index: 1;
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 2rem 1.5rem 4rem;
+        }
+
+        /* ===== Header ===== */
+        header {
+            text-align: center;
+            padding: 3rem 0 2.5rem;
+        }
+
+        .logo-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.4rem 1.2rem;
+            background: var(--bg-card);
+            border: 1px solid var(--border-glow);
+            border-radius: 100px;
+            font-size: 0.75rem;
+            font-weight: 500;
+            color: var(--cyan);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-bottom: 1.5rem;
+            backdrop-filter: blur(20px);
+        }
+
+        .logo-badge .dot {
+            width: 6px; height: 6px;
+            background: var(--cyan);
+            border-radius: 50%;
+            animation: dotPulse 2s ease-in-out infinite;
+        }
+
+        @keyframes dotPulse {
+            0%, 100% { opacity: 1; box-shadow: 0 0 6px var(--cyan); }
+            50% { opacity: 0.4; box-shadow: none; }
+        }
+
+        h1 {
+            font-size: clamp(2.2rem, 5vw, 3.5rem);
+            font-weight: 800;
+            background: var(--gradient-primary);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            line-height: 1.15;
+            margin-bottom: 0.75rem;
+        }
+
+        .subtitle {
+            font-size: 1.05rem;
+            color: var(--text-secondary);
+            max-width: 550px;
+            margin: 0 auto;
+            font-weight: 300;
+        }
+
+        /* ===== Waveform Decoration ===== */
+        .waveform-bar {
+            display: flex;
+            justify-content: center;
+            gap: 3px;
+            margin: 2rem auto 0;
+            height: 30px;
+        }
+
+        .waveform-bar .bar {
+            width: 3px;
+            background: var(--gradient-primary);
+            border-radius: 4px;
+            animation: waveBar 1.2s ease-in-out infinite;
+        }
+
+        @keyframes waveBar {
+            0%, 100% { transform: scaleY(0.3); opacity: 0.4; }
+            50% { transform: scaleY(1); opacity: 1; }
+        }
+
+        /* ===== Input Card ===== */
+        .input-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-glow);
+            border-radius: var(--radius);
+            padding: 2rem;
+            backdrop-filter: blur(30px);
+            box-shadow: var(--shadow-glow);
+            margin-bottom: 2rem;
+            transition: var(--transition);
+        }
+
+        .input-card:hover {
+            border-color: rgba(0, 255, 200, 0.3);
+            box-shadow: 0 0 60px rgba(0, 255, 200, 0.1);
+        }
+
+        .input-row {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1.25rem;
+        }
+
+        .input-group {
+            flex: 1;
+        }
+
+        .input-group.genre-group {
+            flex: 0 0 200px;
+        }
+
+        label {
+            display: block;
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            margin-bottom: 0.5rem;
+        }
+
+        #action-input {
+            width: 100%;
+            padding: 0.9rem 1.2rem;
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: var(--radius-sm);
+            color: var(--text-primary);
+            font-family: 'Inter', sans-serif;
+            font-size: 1rem;
+            resize: vertical;
+            min-height: 60px;
+            max-height: 150px;
+            transition: var(--transition);
+        }
+
+        #action-input:focus {
+            outline: none;
+            border-color: var(--cyan);
+            box-shadow: 0 0 20px var(--cyan-dim);
+        }
+
+        #action-input::placeholder {
+            color: var(--text-muted);
+        }
+
+        #genre-select {
+            width: 100%;
+            padding: 0.9rem 1.2rem;
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: var(--radius-sm);
+            color: var(--text-primary);
+            font-family: 'Inter', sans-serif;
+            font-size: 0.95rem;
+            cursor: pointer;
+            transition: var(--transition);
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2388889f' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 12px center;
+        }
+
+        #genre-select:focus {
+            outline: none;
+            border-color: var(--cyan);
+        }
+
+        #genre-select option {
+            background: #1a1a2e;
+            color: var(--text-primary);
+        }
+
+        /* ===== Submit Button ===== */
+        .btn-submit {
+            width: 100%;
+            padding: 1rem 2rem;
+            background: var(--gradient-primary);
+            border: none;
+            border-radius: var(--radius-sm);
+            color: #0a0a0f;
+            font-family: 'Inter', sans-serif;
+            font-size: 1rem;
+            font-weight: 700;
+            cursor: pointer;
+            letter-spacing: 0.5px;
+            position: relative;
+            overflow: hidden;
+            transition: var(--transition);
+        }
+
+        .btn-submit::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(135deg, transparent, rgba(255,255,255,0.2), transparent);
+            transform: translateX(-100%);
+            transition: 0.6s;
+        }
+
+        .btn-submit:hover::before {
+            transform: translateX(100%);
+        }
+
+        .btn-submit:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 30px rgba(0, 255, 200, 0.3);
+        }
+
+        .btn-submit:active {
+            transform: translateY(0);
+        }
+
+        .btn-submit:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn-submit:disabled::before {
+            display: none;
+        }
+
+        /* ===== Quick Examples ===== */
+        .examples {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            margin-top: 1rem;
+        }
+
+        .examples span {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            margin-right: 0.25rem;
+            line-height: 26px;
+        }
+
+        .example-chip {
+            padding: 0.3rem 0.8rem;
+            background: rgba(139, 92, 246, 0.1);
+            border: 1px solid rgba(139, 92, 246, 0.2);
+            border-radius: 100px;
+            color: var(--purple);
+            font-size: 0.78rem;
+            cursor: pointer;
+            transition: var(--transition);
+            font-family: 'Inter', sans-serif;
+        }
+
+        .example-chip:hover {
+            background: rgba(139, 92, 246, 0.2);
+            border-color: var(--purple);
+            transform: translateY(-1px);
+        }
+
+        /* ===== Loading State ===== */
+        .loading-container {
+            display: none;
+            text-align: center;
+            padding: 3rem 2rem;
+        }
+
+        .loading-container.active {
+            display: block;
+        }
+
+        .loader-ring {
+            width: 50px; height: 50px;
+            border: 3px solid rgba(0,255,200,0.1);
+            border-top-color: var(--cyan);
+            border-radius: 50%;
+            margin: 0 auto 1.5rem;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        .loading-text {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+
+        .loading-text .typing {
+            display: inline-block;
+            animation: typingDots 1.5s infinite;
+        }
+
+        @keyframes typingDots {
+            0% { content: '.'; }
+            33% { content: '..'; }
+            66% { content: '...'; }
+        }
+
+        /* ===== Result Card ===== */
+        .result-container {
+            display: none;
+            animation: fadeInUp 0.5s ease-out;
+        }
+
+        .result-container.active {
+            display: block;
+        }
+
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .result-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .result-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--cyan);
+        }
+
+        .btn-copy {
+            padding: 0.5rem 1rem;
+            background: rgba(0, 255, 200, 0.08);
+            border: 1px solid rgba(0, 255, 200, 0.2);
+            border-radius: var(--radius-sm);
+            color: var(--cyan);
+            font-family: 'Inter', sans-serif;
+            font-size: 0.8rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .btn-copy:hover {
+            background: rgba(0, 255, 200, 0.15);
+        }
+
+        .btn-copy.copied {
+            background: rgba(0, 255, 200, 0.2);
+            border-color: var(--cyan);
+        }
+
+        .result-body {
+            background: var(--bg-card);
+            border: 1px solid var(--border-glow);
+            border-radius: var(--radius);
+            padding: 2rem;
+            backdrop-filter: blur(30px);
+            box-shadow: var(--shadow-glow);
+            font-size: 0.95rem;
+            line-height: 1.8;
+        }
+
+        .result-body h2 {
+            font-size: 1.15rem;
+            font-weight: 700;
+            margin: 1.8rem 0 0.6rem;
+            color: var(--text-primary);
+        }
+
+        .result-body h2:first-child {
+            margin-top: 0;
+        }
+
+        .result-body p {
+            color: var(--text-secondary);
+            margin-bottom: 0.6rem;
+        }
+
+        .result-body strong {
+            color: var(--text-primary);
+        }
+
+        .result-body ul, .result-body ol {
+            padding-left: 1.5rem;
+            margin-bottom: 0.8rem;
+        }
+
+        .result-body li {
+            color: var(--text-secondary);
+            margin-bottom: 0.3rem;
+        }
+
+        .result-body code {
+            font-family: 'JetBrains Mono', monospace;
+            background: rgba(139, 92, 246, 0.12);
+            padding: 0.15rem 0.4rem;
+            border-radius: 4px;
+            font-size: 0.85em;
+            color: var(--purple);
+        }
+
+        /* ===== Error State ===== */
+        .error-container {
+            display: none;
+            text-align: center;
+            padding: 2rem;
+            background: rgba(255, 0, 80, 0.08);
+            border: 1px solid rgba(255, 0, 80, 0.2);
+            border-radius: var(--radius);
+            margin-bottom: 1rem;
+        }
+
+        .error-container.active {
+            display: block;
+            animation: fadeInUp 0.3s ease-out;
+        }
+
+        .error-container p {
+            color: #ff5080;
+            font-size: 0.9rem;
+        }
+
+        /* ===== Footer ===== */
+        footer {
+            text-align: center;
+            padding: 3rem 0 1rem;
+            color: var(--text-muted);
+            font-size: 0.78rem;
+        }
+
+        footer a {
+            color: var(--cyan);
+            text-decoration: none;
+        }
+
+        /* ===== Responsive ===== */
+        @media (max-width: 640px) {
+            .container { padding: 1rem; }
+            header { padding: 2rem 0 1.5rem; }
+            .input-row { flex-direction: column; }
+            .input-group.genre-group { flex: 1; }
+            .input-card { padding: 1.5rem; }
+            .result-body { padding: 1.5rem; }
+        }
+    </style>
+</head>
+<body>
+    <div class="bg-grid"></div>
+    <div class="bg-orb bg-orb-1"></div>
+    <div class="bg-orb bg-orb-2"></div>
+
+    <div class="container">
+        <header>
+            <div class="logo-badge">
+                <span class="dot"></span>
+                Game SFX Planner
+            </div>
+            <h1>Sound Effect Designer</h1>
+            <p class="subtitle">Describe any game action and get a detailed AI-crafted sound design brief — how it should feel, sound, and be produced.</p>
+
+            <div class="waveform-bar" id="waveformBar"></div>
+        </header>
+
+        <!-- Input Card -->
+        <div class="input-card" id="inputCard">
+            <div class="input-row">
+                <div class="input-group">
+                    <label for="action-input">Game Action</label>
+                    <textarea id="action-input" placeholder='e.g., "Dragon breathing fire at a stone castle"' rows="2"></textarea>
+                </div>
+                <div class="input-group genre-group">
+                    <label for="genre-select">Genre</label>
+                    <select id="genre-select">
+                        <option value="General">General</option>
+                        <option value="Fantasy RPG">Fantasy RPG</option>
+                        <option value="Sci-Fi Shooter">Sci-Fi Shooter</option>
+                        <option value="Horror Survival">Horror Survival</option>
+                        <option value="Platformer">Platformer</option>
+                        <option value="Racing">Racing</option>
+                        <option value="Fighting">Fighting</option>
+                        <option value="Open World">Open World</option>
+                        <option value="Stealth">Stealth</option>
+                        <option value="Puzzle">Puzzle</option>
+                        <option value="Retro / Arcade">Retro / Arcade</option>
+                    </select>
+                </div>
+            </div>
+
+            <button class="btn-submit" id="submitBtn" onclick="handleSubmit()">
+                🎧 Describe This Sound
+            </button>
+
+            <div class="examples">
+                <span>Try:</span>
+                <button class="example-chip" onclick="fillExample(this)">Sword clash on shield</button>
+                <button class="example-chip" onclick="fillExample(this)">Spaceship hyperdrive</button>
+                <button class="example-chip" onclick="fillExample(this)">Zombie rising from grave</button>
+                <button class="example-chip" onclick="fillExample(this)">Coin pickup jingle</button>
+                <button class="example-chip" onclick="fillExample(this)">Thunder spell cast</button>
+            </div>
+        </div>
+
+        <!-- Loading -->
+        <div class="loading-container" id="loadingContainer">
+            <div class="loader-ring"></div>
+            <p class="loading-text">Designing your sound<span class="typing" id="typingDots">...</span></p>
+        </div>
+
+        <!-- Error -->
+        <div class="error-container" id="errorContainer">
+            <p id="errorText">Something went wrong.</p>
+        </div>
+
+        <!-- Result -->
+        <div class="result-container" id="resultContainer">
+            <div class="result-header">
+                <span class="result-title" id="resultTitle">🎬 Sound Design Brief</span>
+                <button class="btn-copy" id="copyBtn" onclick="copyResult()">📋 Copy Brief</button>
+            </div>
+            <div class="result-body" id="resultBody"></div>
+        </div>
+
+        <footer>
+            <p>Game SFX Planner &middot; Powered by <a href="https://pollinations.ai" target="_blank">Pollinations AI</a> &middot; No API Keys Required</p>
+        </footer>
+    </div>
+
+    <!-- Marked.js for Markdown rendering -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script>
+        // ===== Generate waveform bars =====
+        const waveformBar = document.getElementById('waveformBar');
+        for (let i = 0; i < 40; i++) {
+            const bar = document.createElement('div');
+            bar.className = 'bar';
+            bar.style.animationDelay = `${i * 0.06}s`;
+            bar.style.height = `${Math.random() * 20 + 10}px`;
+            waveformBar.appendChild(bar);
+        }
+
+        // ===== DOM elements =====
+        const actionInput = document.getElementById('action-input');
+        const genreSelect = document.getElementById('genre-select');
+        const submitBtn = document.getElementById('submitBtn');
+        const loadingContainer = document.getElementById('loadingContainer');
+        const errorContainer = document.getElementById('errorContainer');
+        const errorText = document.getElementById('errorText');
+        const resultContainer = document.getElementById('resultContainer');
+        const resultBody = document.getElementById('resultBody');
+        const resultTitle = document.getElementById('resultTitle');
+        const copyBtn = document.getElementById('copyBtn');
+
+        let lastRawResult = '';
+
+        // ===== Fill example =====
+        function fillExample(chip) {
+            actionInput.value = chip.textContent;
+            actionInput.focus();
+        }
+
+        // ===== Submit =====
+        async function handleSubmit() {
+            const action = actionInput.value.trim();
+            if (!action) {
+                showError('Please describe a game action first.');
+                return;
+            }
+
+            // UI states
+            submitBtn.disabled = true;
+            submitBtn.textContent = '⏳ Generating...';
+            loadingContainer.classList.add('active');
+            errorContainer.classList.remove('active');
+            resultContainer.classList.remove('active');
+
+            try {
+                const response = await fetch('/api/describe', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        action: action,
+                        genre: genreSelect.value
+                    })
+                });
+
+                if (!response.ok) {
+                    const err = await response.json();
+                    throw new Error(err.detail || 'Server error');
+                }
+
+                const data = await response.json();
+                lastRawResult = data.description;
+
+                // Render markdown
+                resultBody.innerHTML = marked.parse(data.description);
+                resultTitle.textContent = `🎬 Sound Brief: "${action.substring(0, 50)}${action.length > 50 ? '...' : ''}"`;
+                resultContainer.classList.add('active');
+
+            } catch (err) {
+                showError(err.message || 'Failed to generate sound description.');
+            } finally {
+                loadingContainer.classList.remove('active');
+                submitBtn.disabled = false;
+                submitBtn.textContent = '🎧 Describe This Sound';
+            }
+        }
+
+        // ===== Show error =====
+        function showError(msg) {
+            errorText.textContent = '⚠️ ' + msg;
+            errorContainer.classList.add('active');
+            setTimeout(() => errorContainer.classList.remove('active'), 6000);
+        }
+
+        // ===== Copy result =====
+        async function copyResult() {
+            try {
+                await navigator.clipboard.writeText(lastRawResult);
+                copyBtn.textContent = '✅ Copied!';
+                copyBtn.classList.add('copied');
+                setTimeout(() => {
+                    copyBtn.textContent = '📋 Copy Brief';
+                    copyBtn.classList.remove('copied');
+                }, 2000);
+            } catch {
+                // Fallback
+                const ta = document.createElement('textarea');
+                ta.value = lastRawResult;
+                document.body.appendChild(ta);
+                ta.select();
+                document.execCommand('copy');
+                document.body.removeChild(ta);
+                copyBtn.textContent = '✅ Copied!';
+                setTimeout(() => copyBtn.textContent = '📋 Copy Brief', 2000);
+            }
+        }
+
+        // ===== Enter key to submit =====
+        actionInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                handleSubmit();
+            }
+        });
+    </script>
+</body>
+</html>
