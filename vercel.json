@@ -1,14 +1,8 @@
 {
-    "builds": [
-        {
-            "src": "api/describe.py",
-            "use": "@vercel/python"
-        }
-    ],
     "rewrites": [
         {
             "source": "/api/describe",
-            "destination": "/api/describe"
+            "destination": "/api/describe.py"
         }
     ]
 }

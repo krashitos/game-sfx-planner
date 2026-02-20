@@ -35,7 +35,7 @@ async def health():
     return {"status": "Game SFX Planner API is running"}
 
 
-@app.post("/")
+@app.post("/api/describe")
 async def describe_sound(request: SFXRequest):
     if not request.action or not request.action.strip():
         raise HTTPException(status_code=400, detail="Action description is required.")
